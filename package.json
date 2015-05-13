@@ -15,5 +15,13 @@
   "bugs": {
     "url": "https://github.com/leshy/logger3/issues"
   },
-  "homepage": "https://github.com/leshy/logger3"
+  "homepage": "https://github.com/leshy/logger3",
+  "dependencies": {
+      "udp-client": "^0.1.0",
+      "subscriptionman2": "git://github.com/leshy/nodejs-subscriptionman2",
+      "colors": "1.0.3",
+      "underscore": "^1.8.3",
+      "helpers": "git://github.com/leshy/nodejs-helpers.git",
+      "backbone4000": "git://github.com/leshy/backbone4000.git"
+  }
 }
