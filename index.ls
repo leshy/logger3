@@ -1,13 +1,16 @@
-Backbone = require 'backbone4000'
+{ map, fold1, keys } = require 'prelude-ls'
 h = require 'helpers'
+
+Backbone = require 'backbone4000'
 subscriptionMan = require('subscriptionman2')
 
+# console logger
 colors = require 'colors'
 
+# udp logger
 UdpGun = require 'udp-client'
 os = require 'os'
 
-{ map, fold1, keys } = require 'prelude-ls'
 
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
