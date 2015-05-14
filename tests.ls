@@ -1,10 +1,22 @@
 
 
-exports.test1 = (test) ->
+
+
+exports.basic = (test) ->
   logger = require './index.js'
-  l = new logger.Logger()
-  console.log "RETURN:", l.log { tags: ['kk','ff'] }, { tags: ['lala'], data: { some: 'data' } }
+  l = new logger.Logger context: { tags: [ 'bla' ] }
+  ret = l.log logger.Data "test msg", { some: 'data' }, [ 'some', 'tags' ]
+  console.log "RETURN",ret
   test.done()
 
-
-#exports.test1()
+exports.child = (test) ->
+  logger = require './index.js'
+  l = new logger.Logger context: { tags: [ 'bla' ] }
+  
+  child = l.child logger.Data {}, [ 'more', 'tags' ]
+  
+  ret = child.log logger.Data "test msg", { some: 'data' }, [ 'some', 'tags' ]
+  
+  console.log "RETURN",ret
+  
+  test.done()

@@ -1,4 +1,4 @@
-{ map, fold1, keys } = require 'prelude-ls'
+{ map, fold1, values, keys } = require 'prelude-ls'
 h = require 'helpers'
 
 Backbone = require 'backbone4000'
@@ -25,15 +25,14 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       if settings.outputs
           map settings.outputs, (settings,name) ~> 
               @outputs.push new exports[name](settings)
-      else if @depth is 1 then @outputs.push new Console()
+      else if @depth is 0 then @outputs.push new Console()
 
       @subscribe true, (event) ~>
           @outputs.each (output) -> output.log event
           if @parent then @parent.log event
-
-      
+            
     child: (...contexts) ->
-      new logger depth: @depth + 1, context: @parseContexts contexts
+      new Logger depth: @depth + 1, context: @parseContexts contexts
     
     ensureContext: ->
       # does this object have a logContext function or value?
@@ -52,7 +51,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
       # make sure tags are an object and not an array
       ensureTags = ->
-        data: it.data	
+        data: it.data or {}
         tags: switch x = it.tags?@@
         | undefined  => {}
         | Object     => it.tags
@@ -71,42 +70,41 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> ~> h.unshift it, @context
       |> @parseContexts
       |> @event
-
-
 )
 
 Data = exports.Data = (msg, data={}, ...tags) -> 
   switch x = msg@@
-  | String  => { data: data, msg: msg, tags: tags }
+  | String  => { data: h.extend(data, { msg: msg }), tags: tags }
   | Object  => { data: msg, tags: data }
   
   
 
-
 Console = exports.Console = Backbone.Model.extend4000(
-    name: 'console'
-    initialize: -> @startTime = process.hrtime()[0]
-    parseTags: (tags) ->
-        map tags, (bla,tag) ->
-            if tag is 'fail' or tag is 'error' then return colors.red tag
-            if tag is 'pass' or tag is 'ok' then return colors.green tag
-            return colors.yellow tag
+  name: 'console'
+  initialize: -> @startTime = process.hrtime()[0]
+  parseTags: (tags) ->
+    tags
+    |> keys
+    |> map (tag) ->
+      if tag is 'fail' or tag is 'error' then return colors.red tag
+      if tag is 'pass' or tag is 'ok' then return colors.green tag
+      return colors.yellow tag
 
-    log: (logEvent) ->
-        hrtime = process.hrtime()
-        tags = @parseTags keys logEvent.tags
-        console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.msg or "-")
+  log: (logEvent) ->
+    hrtime = process.hrtime()
+    tags = @parseTags logEvent.tags
+    console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.data.msg or "-")
 )
 
 
 
 Udp = exports.Udp = Backbone.Model.extend4000(
-    name: 'udp'
-    initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
-        @gun = new UdpGun @settings.port, @settings.host
-        @hostname = os.hostname()
+  name: 'udp'
+  initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
+    @gun = new UdpGun @settings.port, @settings.host
+    @hostname = os.hostname()
 
-    log: (logEvent) ->
-        @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+  log: (logEvent) ->
+    @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
 
 )
