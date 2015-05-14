@@ -7,20 +7,35 @@ colors = require 'colors'
 UdpGun = require 'udp-client'
 os = require 'os'
 
-{ map, fold1 } = require 'prelude-ls'
-
+{ map, fold1, keys } = require 'prelude-ls'
 
 throwError = -> if it?@@ is Error then throw it else it
-isError = -> if it?@@ is Error then void else it
+ignoreError = -> if it?@@ is Error then void else it
 
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
-    initialize: (settings = {}) ->
-      @context = (@ensureContext >> isError)(settings) or {}
+    initialize: (settings={}) ->
+      @context = (@ensureContext >> ignoreError)(settings.context or {})
+      @depth = settings.depth or 0
+
+      @outputs = new Backbone.Collection()
+
+      if settings.outputs
+          map settings.outputs, (settings,name) ~> 
+              @outputs.push new exports[name](settings)
+      else if @depth is 1 then @outputs.push new Console()
+
+      @subscribe true, (event) ~>
+          @outputs.each (output) -> output.log event
+          if @parent then @parent.log event
+
       
+    child: (...contexts) ->
+      new logger depth: @depth + 1, context: @parseContexts contexts
+    
     ensureContext: ->
       # does this object have a logContext function or value?
       checkContextFun = ->
-        switch bla = it.logContext?@@
+        switch x = it.logContext?@@ # without equality here, this fails, wtf
         | undefined  => it
         | Object     => it.logContext
         | Function   => it.logContext()
@@ -34,25 +49,61 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
       # make sure tags are an object and not an array
       ensureTags = ->
-        data: it.data
-        tags: switch bla = it.tags?@@
+        data: it.data	
+        tags: switch x = it.tags?@@
         | undefined  => {}
         | Object     => it.tags
         | Array      => h.arrayToDict it.tags
-        | otherwise  => Error "invalid tags"
-
+        | otherwise  => Error "tags type invalid"
 
       (checkContextFun >> checkContextObj >> ensureTags) it
+
+    parseContexts: (contexts) ->
+      contexts
+      |> map @ensureContext >> throwError
+      |> fold1 h.extend
 
     log: (...contexts) ->
       contexts
       |> ~> h.unshift it, @context
-      |> map @ensureContext >> throwError
-      |> fold1 h.extend
+      |> @parseContexts
       |> @event
+
+
+)
+
+Data = exports.Data = (msg, data={}, ...tags) -> 
+  switch x = msg@@
+  | String  => { data: data, msg: msg, tags: tags }
+  | Object  => { data: msg, tags: data }
+  
+  
+
+
+Console = exports.Console = Backbone.Model.extend4000(
+    name: 'console'
+    initialize: -> @startTime = process.hrtime()[0]
+    parseTags: (tags) ->
+        map tags, (bla,tag) ->
+            if tag is 'fail' or tag is 'error' then return colors.red tag
+            if tag is 'pass' or tag is 'ok' then return colors.green tag
+            return colors.yellow tag
+
+    log: (logEvent) ->
+        hrtime = process.hrtime()
+        tags = @parseTags keys logEvent.tags
+        console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.msg or "-")
 )
 
 
 
-class Context
-  -> @x = it
+Udp = exports.Udp = Backbone.Model.extend4000(
+    name: 'udp'
+    initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
+        @gun = new UdpGun @settings.port, @settings.host
+        @hostname = os.hostname()
+
+    log: (logEvent) ->
+        @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+
+)
