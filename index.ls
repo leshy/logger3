@@ -34,7 +34,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
             
     child: (...contexts) ->
       new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
-    
+            
     ensureContext: ->
       # does this object have a logContext function or value?
       checkContextFun = ->
@@ -72,6 +72,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> ~> h.unshift it, @context
       |> @parseContexts
       |> @event
+      |> (context) ~> ~> @child context
 )
 
 Data = exports.Data = exports.logData = (msg, data={}, ...tags) -> 

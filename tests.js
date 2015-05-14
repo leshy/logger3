@@ -15,4 +15,21 @@
     console.log("RETURN", ret);
     return test.done();
   };
+  exports.childFromLog = function(test){
+    var logger, l, spawn, c;
+    logger = require('./index.js');
+    l = new logger.Logger({
+      context: {
+        tags: ['bla']
+      }
+    });
+    spawn = l.log(logger.Data("test msg", {
+      some: 'data'
+    }, 'some', 'tags'));
+    c = spawn();
+    c.log(logger.Data("tet msg2", {
+      more: 'data'
+    }, 'more', 'tags', 'yes'));
+    return test.done();
+  };
 }).call(this);

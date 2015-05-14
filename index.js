@@ -111,12 +111,17 @@
     log: function(){
       var contexts, this$ = this;
       contexts = slice$.call(arguments);
-      return this.event(
+      return function(context){
+        return function(){
+          return this$.child(context);
+        };
+      }(
+      this.event(
       this.parseContexts(
       function(it){
         return h.unshift(it, this$.context);
       }(
-      contexts)));
+      contexts))));
     }
   });
   Data = exports.Data = exports.logData = function(msg, data){
