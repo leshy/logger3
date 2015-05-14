@@ -26,6 +26,7 @@
       settings == null && (settings = {});
       this.context = compose$(this.ensureContext, ignoreError)(settings.context || {});
       this.depth = settings.depth || 0;
+      this.parent = settings.parent;
       this.outputs = new Backbone.Collection();
       if (settings.outputs) {
         map(settings.outputs, function(settings, name){
@@ -48,6 +49,7 @@
       contexts = slice$.call(arguments);
       return new Logger({
         depth: this.depth + 1,
+        parent: this,
         context: this.parseContexts(contexts)
       });
     },
@@ -75,13 +77,15 @@
         }
         return {
           tags: it.tags,
-          data: it.data || {}
+          data: it.data || {},
+          msg: it.msg
         };
       };
       ensureTags = function(it){
         var x;
         return {
           data: it.data || {},
+          msg: it.msg || "",
           tags: (function(){
             var ref$;
             switch (x = (ref$ = it.tags) != null ? ref$.constructor : void 8) {
@@ -122,9 +126,8 @@
     switch (x = msg.constructor) {
     case String:
       return {
-        data: h.extend(data, {
-          msg: msg
-        }),
+        msg: msg,
+        data: data,
         tags: tags
       };
     case Object:
@@ -156,7 +159,7 @@
       var hrtime, tags;
       hrtime = process.hrtime();
       tags = this.parseTags(logEvent.tags);
-      return console.log(colors.grey(new Date()) + "\t" + colors.green((hrtime[0] - this.startTime) + "." + hrtime[1]) + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.data.msg || "-"));
+      return console.log(colors.grey(new Date()) + "\t" + colors.green((hrtime[0] - this.startTime) + "." + hrtime[1]) + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.msg || "-"));
     }
   });
   Udp = exports.Udp = Backbone.Model.extend4000({

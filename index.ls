@@ -19,7 +19,8 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     initialize: (settings={}) ->
       @context = (@ensureContext >> ignoreError)(settings.context or {})
       @depth = settings.depth or 0
-
+      @parent = settings.parent
+      
       @outputs = new Backbone.Collection()
 
       if settings.outputs
@@ -32,7 +33,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
           if @parent then @parent.log event
             
     child: (...contexts) ->
-      new Logger depth: @depth + 1, context: @parseContexts contexts
+      new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
     
     ensureContext: ->
       # does this object have a logContext function or value?
@@ -47,11 +48,12 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       checkContextObj = ->
         if it?@@ isnt Object then return Error "can't cast '#{it}' to logContext"
         if not it.tags and not it.data then return Error "this is not a valid logContext object"
-        it{tags, data or {}}
+        it{tags, data or {}, msg}
 
       # make sure tags are an object and not an array
       ensureTags = ->
         data: it.data or {}
+        msg: it.msg or ""
         tags: switch x = it.tags?@@
         | undefined  => {}
         | Object     => it.tags
@@ -74,7 +76,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
 Data = exports.Data = (msg, data={}, ...tags) -> 
   switch x = msg@@
-  | String  => { data: h.extend(data, { msg: msg }), tags: tags }
+  | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
   
   
@@ -93,7 +95,7 @@ Console = exports.Console = Backbone.Model.extend4000(
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.data.msg or "-")
+    console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.msg or "-")
 )
 
 
