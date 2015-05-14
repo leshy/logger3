@@ -36,6 +36,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
     
     ensureContext: ->
+      
       # does this object have a logContext function or value?
       checkContextFun = ->
         switch x = it.logContext?@@ # without equality here, this fails, wtf
@@ -44,26 +45,46 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
         | Function   => it.logContext()
         | otherwise  => Error "logContext type mismatch"
 
+      passErr = (input, f) ->
+        if input?@@ is Error then Error else f(input)
+
+      # did I get an array? if so, build context object
       checkContextArray = ->
         if it?@@ is Array then parseArray it else it
 
+      # by this point I should be dealing with an object, if not, we got garbage as input
+      ensureType = ->
+        if it?@@ is Object then it else throw Error "couldn't cast '#{it}' to logContext"
+
       # check if my context obj is valid
       checkContextObj = ->
-        if it?@@ isnt Object then return Error "can't cast '#{it}' to logContext"
-        if not it.tags and not it.data then return Error "this is not a valid logContext object"
+        if not it.tags and not it.data then throw Error "this is not a valid logContext object"
         return it{tags, data or {}, msg}
         
       # make sure tags are an object and not an array
       ensureTags = ->
-        data: it.data or {}
-        msg: it.msg or ""
+        data: it.data
+        msg: it.msg 
         tags: switch x = it.tags?@@
         | undefined  => {}
         | Object     => it.tags
         | Array      => h.arrayToDict it.tags
         | otherwise  => Error "tags type invalid"
 
-      (checkContextFun >> checkContextArray >> checkContextObj >> ensureTags) it
+      checkRest = ->
+        if it.data? and it.data@@ isnt Object
+          return Error "data constructor isn't object (#{it.data})"
+          
+        if it.msg? and it.msg@@ isnt String
+          return Error "msg constructor isn't string (#{it.msg})"
+          
+        it
+
+
+      try
+        (checkContextFun >> checkContextArray >> ensureType >> checkContextObj >> ensureTags >> checkRest) it
+      catch err
+        err
 
     parseContexts: (contexts) ->
       contexts

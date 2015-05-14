@@ -18,5 +18,5 @@ exports.childFromLog = (test) ->
   spawn = l.log [ "test msg", { some: 'data' }, 'some', 'tags' ]
 
   c = spawn()
-  c.log "tet msg2", { more: 'data' }, 'more', 'tags', 'yes'
+  c.log "tet msg2", { extra: "data" }, 'more', 'tags', 'yes'
   test.done()

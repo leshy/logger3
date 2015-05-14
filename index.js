@@ -54,7 +54,7 @@
       });
     },
     ensureContext: function(it){
-      var checkContextFun, checkContextArray, checkContextObj, ensureTags;
+      var checkContextFun, passErr, checkContextArray, ensureType, checkContextObj, ensureTags, checkRest, err;
       checkContextFun = function(it){
         var x, ref$;
         switch (x = (ref$ = it.logContext) != null ? ref$.constructor : void 8) {
@@ -68,6 +68,13 @@
           return Error("logContext type mismatch");
         }
       };
+      passErr = function(input, f){
+        if ((input != null ? input.constructor : void 8) === Error) {
+          return Error;
+        } else {
+          return f(input);
+        }
+      };
       checkContextArray = function(it){
         if ((it != null ? it.constructor : void 8) === Array) {
           return parseArray(it);
@@ -75,12 +82,16 @@
           return it;
         }
       };
-      checkContextObj = function(it){
-        if ((it != null ? it.constructor : void 8) !== Object) {
-          return Error("can't cast '" + it + "' to logContext");
+      ensureType = function(it){
+        if ((it != null ? it.constructor : void 8) === Object) {
+          return it;
+        } else {
+          throw Error("couldn't cast '" + it + "' to logContext");
         }
+      };
+      checkContextObj = function(it){
         if (!it.tags && !it.data) {
-          return Error("this is not a valid logContext object");
+          throw Error("this is not a valid logContext object");
         }
         return {
           tags: it.tags,
@@ -91,8 +102,8 @@
       ensureTags = function(it){
         var x;
         return {
-          data: it.data || {},
-          msg: it.msg || "",
+          data: it.data,
+          msg: it.msg,
           tags: (function(){
             var ref$;
             switch (x = (ref$ = it.tags) != null ? ref$.constructor : void 8) {
@@ -108,7 +119,21 @@
           }())
         };
       };
-      return compose$(checkContextFun, checkContextArray, checkContextObj, ensureTags)(it);
+      checkRest = function(it){
+        if (it.data != null && it.data.constructor !== Object) {
+          return Error("data constructor isn't object (" + it.data + ")");
+        }
+        if (it.msg != null && it.msg.constructor !== String) {
+          return Error("msg constructor isn't string (" + it.msg + ")");
+        }
+        return it;
+      };
+      try {
+        return compose$(checkContextFun, checkContextArray, ensureType, checkContextObj, ensureTags, checkRest)(it);
+      } catch (e$) {
+        err = e$;
+        return err;
+      }
     },
     parseContexts: function(contexts){
       return fold1(h.extend)(

@@ -31,7 +31,7 @@
     ]);
     c = spawn();
     c.log("tet msg2", {
-      more: 'data'
+      extra: "data"
     }, 'more', 'tags', 'yes');
     return test.done();
   };
