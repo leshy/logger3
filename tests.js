@@ -8,11 +8,12 @@
         tags: ['bla']
       }
     });
-    child = l.child(logger.Data({}, ['more', 'tags']));
-    ret = child.log(logger.Data("test msg", {
-      some: 'data'
-    }, 'some', 'tags'));
-    console.log("RETURN", ret);
+    child = l.child([{}, ['more', 'tags']]);
+    ret = child.log([
+      "test msg", {
+        some: 'data'
+      }, 'some', 'tags'
+    ]);
     return test.done();
   };
   exports.childFromLog = function(test){
@@ -23,13 +24,15 @@
         tags: ['bla']
       }
     });
-    spawn = l.log(logger.Data("test msg", {
-      some: 'data'
-    }, 'some', 'tags'));
+    spawn = l.log([
+      "test msg", {
+        some: 'data'
+      }, 'some', 'tags'
+    ]);
     c = spawn();
-    c.log(logger.Data("tet msg2", {
+    c.log("tet msg2", {
       more: 'data'
-    }, 'more', 'tags', 'yes'));
+    }, 'more', 'tags', 'yes');
     return test.done();
   };
 }).call(this);

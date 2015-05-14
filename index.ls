@@ -1,4 +1,4 @@
-{ map, fold1, values, keys } = require 'prelude-ls'
+{ map, fold1, keys, first } = require 'prelude-ls'
 h = require 'helpers'
 
 Backbone = require 'backbone4000'
@@ -34,7 +34,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
             
     child: (...contexts) ->
       new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
-            
+    
     ensureContext: ->
       # does this object have a logContext function or value?
       checkContextFun = ->
@@ -44,12 +44,15 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
         | Function   => it.logContext()
         | otherwise  => Error "logContext type mismatch"
 
+      checkContextArray = ->
+        if it?@@ is Array then parseArray it else it
+
       # check if my context obj is valid
       checkContextObj = ->
         if it?@@ isnt Object then return Error "can't cast '#{it}' to logContext"
         if not it.tags and not it.data then return Error "this is not a valid logContext object"
-        it{tags, data or {}, msg}
-
+        return it{tags, data or {}, msg}
+        
       # make sure tags are an object and not an array
       ensureTags = ->
         data: it.data or {}
@@ -60,7 +63,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
         | Array      => h.arrayToDict it.tags
         | otherwise  => Error "tags type invalid"
 
-      (checkContextFun >> checkContextObj >> ensureTags) it
+      (checkContextFun >> checkContextArray >> checkContextObj >> ensureTags) it
 
     parseContexts: (contexts) ->
       contexts
@@ -68,6 +71,8 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> fold1 h.extend
 
     log: (...contexts) ->
+      if first(contexts)@@ is String then contexts = [ contexts ]
+      
       contexts
       |> ~> h.unshift it, @context
       |> @parseContexts
@@ -75,11 +80,10 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> (context) ~> ~> @child context
 )
 
-Data = exports.Data = exports.logData = (msg, data={}, ...tags) -> 
+parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
-  
   
 
 Console = exports.Console = Backbone.Model.extend4000(
