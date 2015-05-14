@@ -119,7 +119,7 @@
       contexts)));
     }
   });
-  Data = exports.Data = function(msg, data){
+  Data = exports.Data = exports.logData = function(msg, data){
     var tags, x;
     data == null && (data = {});
     tags = slice$.call(arguments, 2);

@@ -74,7 +74,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> @event
 )
 
-Data = exports.Data = (msg, data={}, ...tags) -> 
+Data = exports.Data = exports.logData = (msg, data={}, ...tags) -> 
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
