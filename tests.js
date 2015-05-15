@@ -35,4 +35,15 @@
     }, 'more', 'tags', 'yes');
     return test.done();
   };
+  exports.callable = function(test){
+    var logger, l;
+    logger = require('./index.js');
+    l = new logger.Logger({
+      context: {
+        tags: ['bla']
+      }
+    });
+    l("test");
+    return test.done();
+  };
 }).call(this);

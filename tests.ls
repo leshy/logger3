@@ -16,3 +16,9 @@ exports.childFromLog = (test) ->
   c = spawn()
   c.log "tet msg2", { extra: "data" }, 'more', 'tags', 'yes'
   test.done()
+  
+exports.callable = (test) ->
+  logger = require './index.js'
+  l = new logger.Logger context: { tags: [ 'bla' ] }
+  l "test"
+  test.done()
