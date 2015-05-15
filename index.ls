@@ -10,7 +10,8 @@ colors = require 'colors'
 # udp logger
 UdpGun = require 'udp-client'
 os = require 'os'
-
+_ = require 'underscore'
+util = require 'util'
 
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
@@ -24,8 +25,9 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       @outputs = new Backbone.Collection()
 
       if settings.outputs
-          map settings.outputs, (settings,name) ~> 
-              @outputs.push new exports[name](settings)
+        console.log settings.outputs
+        _.map settings.outputs, (settings,name) ~> 
+          @outputs.push new exports[name](settings)
       else if @depth is 0 then @outputs.push new Console()
 
       @subscribe true, (event) ~>
@@ -54,11 +56,14 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
       # by this point I should be dealing with an object, if not, we got garbage as input
       ensureType = ->
-        if it?@@ is Object then it else throw Error "couldn't cast '#{it}' to logContext"
+        if it?@@ isnt Object then throw Error "couldn't cast '#{util.inpect it}' to logContext"
+        else it
 
       # check if my context obj is valid
       checkContextObj = ->
-        if not it.tags and not it.data then throw Error "this is not a valid logContext object"
+        if not it.tags and not it.data
+          throw Error "this is not a valid logContext object '#{util.inpect it}'"
+          
         return it{tags, data or {}, msg}
         
       # make sure tags are an object and not an array
@@ -67,22 +72,24 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
         msg: it.msg 
         tags: switch x = it.tags?@@
         | undefined  => {}
+        | String     => [ it.tags ]
         | Object     => it.tags
         | Array      => h.arrayToDict it.tags
-        | otherwise  => Error "tags type invalid"
+        | otherwise  => throw Error "tags type invalid"
 
       checkRest = ->
         if it.data? and it.data@@ isnt Object
           return Error "data constructor isn't object (#{it.data})"
           
         if it.msg? and it.msg@@ isnt String
-          return Error "msg constructor isn't string (#{it.msg})"
-          
+          return Error "msg constructor isn't string (#{it.msg})"          
         it
-
-
+        
       try
-        (checkContextFun >> checkContextArray >> ensureType >> checkContextObj >> ensureTags >> checkRest) it
+        it
+        |> checkContextFun >> checkContextArray >> ensureType
+        |> checkContextObj >> ensureTags >> checkRest
+        
       catch err
         err
 
@@ -98,7 +105,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       |> ~> h.unshift it, @context
       |> @parseContexts
       |> @event
-      |> (context) ~> ~> @child context
+      |> (context) ~> ~> @child _.omit context, 'data', 'msg'
 )
 
 parseArray = exports.parseArray = ([msg, data, ...tags]) ->
