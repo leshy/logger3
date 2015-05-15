@@ -31,3 +31,5 @@ obj2 = new class3()
 
 console.log obj2()
 console.log obj2.f()
+
+

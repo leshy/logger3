@@ -107,14 +107,14 @@
       };
       ensureType = function(it){
         if ((it != null ? it.constructor : void 8) !== Object) {
-          throw Error("couldn't cast '" + util.inpect(it) + "' to logContext");
+          throw Error("couldn't cast to logContext (" + it + ")");
         } else {
           return it;
         }
       };
       checkContextObj = function(it){
         if (!it.tags && !it.data) {
-          throw Error("this is not a valid logContext object '" + util.inpect(it) + "'");
+          throw Error("this is not a valid logContext object '" + it + "'");
         }
         return {
           tags: it.tags,
@@ -146,10 +146,10 @@
       };
       checkRest = function(it){
         if (it.data != null && it.data.constructor !== Object) {
-          return Error("data constructor isn't object (" + it.data + ")");
+          throw Error("data constructor isn't object (" + it.data + ")");
         }
         if (it.msg != null && it.msg.constructor !== String) {
-          return Error("msg constructor isn't string (" + it.msg + ")");
+          throw Error("msg constructor isn't string (" + it.msg + ")");
         }
         return it;
       };

@@ -43,6 +43,7 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
         @outputs.each (output) -> output.log event
         if @parent then @parent.log event
 
+
   child: (...contexts) ->
     new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
 
@@ -65,13 +66,13 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
 
     # by this point I should be dealing with an object, if not, we got garbage as input
     ensureType = ->
-      if it?@@ isnt Object then throw Error "couldn't cast '#{util.inpect it}' to logContext"
+      if it?@@ isnt Object then throw Error "couldn't cast to logContext (#{it})"
       else it
 
     # check if my context obj is valid
     checkContextObj = ->
       if not it.tags and not it.data
-        throw Error "this is not a valid logContext object '#{util.inpect it}'"
+        throw Error "this is not a valid logContext object '#{it}'"
 
       return it{tags, data or {}, msg}
 
@@ -88,10 +89,10 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
 
     checkRest = ->
       if it.data? and it.data@@ isnt Object
-        return Error "data constructor isn't object (#{it.data})"
+        throw Error "data constructor isn't object (#{it.data})"
 
       if it.msg? and it.msg@@ isnt String
-        return Error "msg constructor isn't string (#{it.msg})"          
+        throw Error "msg constructor isn't string (#{it.msg})"          
       it
 
     try
