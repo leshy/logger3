@@ -18,7 +18,6 @@
   "homepage": "https://github.com/leshy/logger3",
   "dependencies": {
     "backbone4000": "git://github.com/leshy/backbone4000.git",
-    "callable-klass": "0.0.1",
     "colors": "1.0.3",
     "helpers": "git://github.com/leshy/nodejs-helpers.git",
     "subscriptionman2": "git://github.com/leshy/nodejs-subscriptionman2",

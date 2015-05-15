@@ -30,13 +30,13 @@
       }, 'some', 'tags'
     ]);
     c = spawn();
-    c.log("tet msg2", {
+    c("tet msg2", {
       extra: "data"
     }, 'more', 'tags', 'yes');
     return test.done();
   };
   exports.callable = function(test){
-    var logger, l;
+    var logger, l, l2, l3;
     logger = require('./index.js');
     l = new logger.Logger({
       context: {
@@ -44,6 +44,10 @@
       }
     });
     l("test");
+    l2 = l.child([{}, ['b', 'c']]);
+    l2("test2");
+    l3 = l2.child([{}, ['d', 'c']]);
+    l3("test3");
     return test.done();
   };
 }).call(this);

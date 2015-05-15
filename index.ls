@@ -4,9 +4,6 @@ h = require 'helpers'
 Backbone = require 'backbone4000'
 subscriptionMan = require('subscriptionman2')
 
-
-callable = require 'callable-klass'
-
 # console logger
 colors = require 'colors'
 
@@ -19,9 +16,16 @@ util = require 'util'
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
 
+callable = (cls) ->
+  callable_cls = (...args) ->
+    obj = (...args) -> obj.call.apply obj, args
+    obj.__proto__ = cls::
+    cls.apply obj, args
+    obj
+
 Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
-  callable: (...args) -> @log.apply @, args
-    
+  call: (...args) -> @log.apply @, args
+  
   initialize: (settings={}) ->
     @context = (@ensureContext >> ignoreError)(settings.context or {})
     @depth = settings.depth or 0
@@ -105,7 +109,6 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
 
   log: (...contexts) ->
     if first(contexts)@@ is String then contexts = [ contexts ]
-
     contexts
     |> ~> h.unshift it, @context
     |> @parseContexts
