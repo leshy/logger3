@@ -1,3 +1,5 @@
+# just experiments
+
 class1 = (settings) ->
   @bla = 1
   @x = 3
