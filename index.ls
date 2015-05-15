@@ -1,4 +1,4 @@
-{ map, fold1, keys, first } = require 'prelude-ls'
+{ map, fold1, keys, first, flatten } = require 'prelude-ls'
 h = require 'helpers'
 
 Backbone = require 'backbone4000'
@@ -12,6 +12,7 @@ UdpGun = require 'udp-client'
 os = require 'os'
 _ = require 'underscore'
 util = require 'util'
+
 
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
@@ -84,7 +85,7 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
       | undefined  => {}
       | String     => [ it.tags ]
       | Object     => it.tags
-      | Array      => h.arrayToDict it.tags
+      | Array      => (flatten >> h.arrayToDict)(it.tags)
       | otherwise  => throw Error "tags type invalid"
 
     checkRest = ->
@@ -117,6 +118,10 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
     |> (context) ~> ~> @child _.omit context, 'data', 'msg'
 )
 
+
+
+
+
 parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
@@ -131,14 +136,16 @@ Console = exports.Console = Backbone.Model.extend4000(
     |> keys
     |> map (tag) ->
       if tag is 'fail' or tag is 'error' then return colors.red tag
-      if tag is 'pass' or tag is 'ok' then return colors.green tag
+      if tag is 'pass' or tag is 'ok' or tag is 'success' then return colors.green tag
       return colors.yellow tag
 
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.grey(new Date()) + "\t" + colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t⋅\t" + (logEvent.msg or "-")
+    console.log colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
 )
+
+
 
 
 
@@ -152,3 +159,6 @@ Udp = exports.Udp = Backbone.Model.extend4000(
     @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
 
 )
+
+
+
