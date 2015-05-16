@@ -20,6 +20,7 @@
     "backbone4000": "git://github.com/leshy/backbone4000.git",
     "colors": "1.0.3",
     "helpers": "git://github.com/leshy/nodejs-helpers.git",
+    "prelude-ls": "^1.1.2",
     "subscriptionman2": "git://github.com/leshy/nodejs-subscriptionman2",
     "udp-client": "^0.1.0",
     "underscore": "^1.8.3"
