@@ -1,6 +1,3 @@
-
-
-
 exports.child = (test) ->
   logger = require './index.js'
   l = new logger.Logger context: { tags: [ 'bla' ] }
@@ -30,3 +27,4 @@ exports.callable = (test) ->
   l3 "test3"
   
   test.done()
+

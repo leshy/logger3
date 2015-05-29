@@ -5,15 +5,14 @@ net = require 'net'
 Backbone = require 'backbone4000'
 subscriptionMan = require('subscriptionman2')
 
+_ = require 'underscore'
 # console logger
 colors = require 'colors'
 
 # udp logger
 UdpGun = require 'udp-client'
 os = require 'os'
-_ = require 'underscore'
 util = require 'util'
-
 
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
@@ -25,7 +24,7 @@ callable = (cls) ->
     cls.apply obj, args
     obj
 
-Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
+Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
   
   initialize: (settings={}) ->
@@ -36,8 +35,7 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
     @outputs = new Backbone.Collection()
 
     if settings.outputs
-      console.log settings.outputs
-      _.map settings.outputs, (settings,name) ~> 
+      _.map settings.outputs, (settings,name) ~>
         @outputs.push new exports[name](settings)
     else if @depth is 0 then @outputs.push new Console()
 
@@ -45,12 +43,13 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
         @outputs.each (output) -> output.log event
         if @parent then @parent.log event
 
+  extendContext: (...contexts) ->
+    @context = h.extend @context, @parseContexts contexts
 
   child: (...contexts) ->
     new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
 
   ensureContext: ->
-
     # does this object have a logContext function or value?
     checkContextFun = ->
       switch x = it.logContext?@@ # without equality here, this fails, wtf
@@ -74,7 +73,7 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
     # check if my context obj is valid
     checkContextObj = ->
       if not it.tags and not it.data
-        throw Error "this is not a valid logContext object '#{it}'"
+        throw Error "this is not a valid logContext object '#{util.inspect(it)}'"
 
       return it{tags, data or {}, msg}
 
@@ -112,8 +111,9 @@ Logger = exports.Logger = callable subscriptionMan.basic.extend4000(
 
   log: (...contexts) ->
     if first(contexts)@@ is String then contexts = [ contexts ]
+    
     contexts
-    |> ~> h.unshift it, @context
+    |> ~> if @context then h.unshift it, @context else it
     |> @parseContexts
     |> @event
     |> (context) ~> ~> @child _.omit context, 'data', 'msg'
@@ -138,7 +138,7 @@ Console = exports.Console = Backbone.Model.extend4000(
     |> map (tag) ->
       if tag is 'fail' or tag is 'error' then return colors.red tag
       if tag in [ 'pass', 'ok', 'success', 'completed' ] then return colors.green tag
-      if tag in [ 'GET','POST', 'login' ] then return colors.magenta tag
+      if tag in [ 'GET','POST', 'login', 'in', 'out' ] then return colors.magenta tag
       return colors.yellow tag
 
   log: (logEvent) ->
@@ -178,6 +178,6 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
   log: (logEvent) ->
     @clients
       |> values
-      |> map ~> it.write JSON.stringify(_.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
+      |> map ~> it.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
 
 )
