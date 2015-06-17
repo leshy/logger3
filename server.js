@@ -11,7 +11,6 @@
   os = require('os');
   util = require('util');
   h.extendm(exports, require('./index'));
-  console.log("LOGGER", exports.Logger);
   Console = exports.Console = Backbone.Model.extend4000({
     name: 'console',
     initialize: function(){

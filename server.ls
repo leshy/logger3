@@ -15,8 +15,6 @@ util = require 'util'
 
 h.extendm exports, require('./index')
 
-console.log "LOGGER", exports.Logger
-
 Console = exports.Console = Backbone.Model.extend4000(
   name: 'console'
   initialize: -> @startTime = process.hrtime()[0]
@@ -36,7 +34,6 @@ Console = exports.Console = Backbone.Model.extend4000(
 )
 
 
-
 Udp = exports.Udp = Backbone.Model.extend4000(
   name: 'udp'
   initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
@@ -53,18 +50,16 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
   initialize: (@settings = { port: 7000, host: '0.0.0.0' } ) ->
     cnt = 0
     @clients = {}
-    server = net.createServer (socket) ~> 
+    server = net.createServer (socket) ~>
       id = cnt++
       @clients[id] = socket
       socket.on 'close', ~> delete @clients[id]
-      
+
     server.listen @settings.port, @settings.host
- 
+
 
   log: (logEvent) ->
     @clients
       |> values
       |> map ~> it.write JSON.stringify(h.extendm { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
-
 )
-

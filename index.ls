@@ -24,11 +24,19 @@ callable = (cls) ->
     cls.apply obj, args
     obj
 
+parseTags = ->
+  switch x = it?@@
+    | undefined  => {}
+    | String     => tmp = { }; tmp[it] = true; tmp
+    | Object     => it.tags? or it
+    | Array      => (flatten >> h.arrayToDict)(it)
+    | otherwise  => throw Error "tags type invalid"
+
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
-  
+
   initialize: (settings={}) ->
-    @context = (@ensureContext >> ignoreError)(settings.context or {})
+    @context = (@ensureContext >> ignoreError)(settings.context or {}) or { tags: {}, data: {} }
     @depth = settings.depth or 0
     @parent = settings.parent
 
@@ -42,6 +50,15 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     @subscribe true, (event) ~>
         @outputs.each (output) -> output.log event
         if @parent then @parent.log event
+
+  addTags: (tags) ->
+    tags = parseTags tags
+    @context.tags = h.extend (@context.tags or {}), tags
+
+  delTags: (tags) ->
+    tags = parseTags tags
+    @context.tags = h.dictMap @context.tags, (val,name) ->
+      if tags[name] then undefined else true
 
   extendContext: (...contexts) ->
     @context = h.extend @context, @parseContexts contexts
@@ -77,23 +94,18 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
       return it{tags, data or {}, msg}
 
-    # make sure tags are an object and not an array
-    ensureTags = ->
+    # make sure tags are an object and not an array or whatever
+    ensureTags = ~>
       data: it.data
-      msg: it.msg 
-      tags: switch x = it.tags?@@
-      | undefined  => {}
-      | String     => [ it.tags ]
-      | Object     => it.tags
-      | Array      => (flatten >> h.arrayToDict)(it.tags)
-      | otherwise  => throw Error "tags type invalid"
+      msg: it.msg
+      tags: parseTags it.tags
 
     checkRest = ->
       if it.data? and it.data@@ isnt Object
         throw Error "data constructor isn't object (#{it.data})"
 
       if it.msg? and it.msg@@ isnt String
-        throw Error "msg constructor isn't string (#{it.msg})"          
+        throw Error "msg constructor isn't string (#{it.msg})"
       it
 
     try
@@ -111,7 +123,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
   log: (...contexts) ->
     if first(contexts)@@ is String then contexts = [ contexts ]
-    
+
     contexts
     |> ~> if @context then h.unshift it, @context else it
     |> @parseContexts
@@ -127,7 +139,7 @@ parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
-  
+
 
 Console = exports.Console = Backbone.Model.extend4000(
   name: 'console'
@@ -167,13 +179,13 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
   initialize: (@settings = { port: 7000, host: '0.0.0.0' } ) ->
     cnt = 0
     @clients = {}
-    server = net.createServer (socket) ~> 
+    server = net.createServer (socket) ~>
       id = cnt++
       @clients[id] = socket
       socket.on 'close', ~> delete @clients[id]
-      
+
     server.listen @settings.port, @settings.host
- 
+
 
   log: (logEvent) ->
     @clients
