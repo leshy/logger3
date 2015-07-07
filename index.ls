@@ -50,7 +50,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     @subscribe true, (event) ~>
         @outputs.each (output) -> output.log event
         if @parent then @parent.log event
-
+    
   addTags: (tags) ->
     tags = parseTags tags
     @context.tags = h.extend (@context.tags or {}), tags
@@ -132,9 +132,6 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 )
 
 
-
-
-
 parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
@@ -160,11 +157,9 @@ Console = exports.Console = Backbone.Model.extend4000(
 )
 
 
-
-
-
 Udp = exports.Udp = Backbone.Model.extend4000(
   name: 'udp'
+
   initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
     @gun = new UdpGun @settings.port, @settings.host
     @hostname = os.hostname()
@@ -176,6 +171,7 @@ Udp = exports.Udp = Backbone.Model.extend4000(
 
 tcpServer = exports.tcpServer = Backbone.Model.extend4000(
   name: 'tcpServer'
+
   initialize: (@settings = { port: 7000, host: '0.0.0.0' } ) ->
     cnt = 0
     @clients = {}
@@ -183,9 +179,7 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
       id = cnt++
       @clients[id] = socket
       socket.on 'close', ~> delete @clients[id]
-
     server.listen @settings.port, @settings.host
-
 
   log: (logEvent) ->
     @clients
