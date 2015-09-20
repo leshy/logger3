@@ -47,12 +47,16 @@
       tmp = {};
       tmp[it] = true;
       return tmp;
+    case Number:
+      tmp = {};
+      tmp[String(it)] = true;
+      return tmp;
     case Object:
       return it.tags != null || it;
     case Array:
       return compose$(flatten, h.arrayToDict)(it);
     default:
-      throw Error("tags type invalid");
+      throw Error("tags type invalid, received: " + it);
     }
   };
   Logger = exports.Logger = subscriptionMan.basic.extend4000({
@@ -297,7 +301,11 @@
         var id;
         id = cnt++;
         this$.clients[id] = socket;
-        return socket.on('close', function(){
+        socket.on('close', function(){
+          var ref$, ref1$;
+          return ref1$ = (ref$ = this$.clients)[id], delete ref$[id], ref1$;
+        });
+        return socket.on('error', function(){
           var ref$, ref1$;
           return ref1$ = (ref$ = this$.clients)[id], delete ref$[id], ref1$;
         });
@@ -306,16 +314,18 @@
     },
     log: function(logEvent){
       var this$ = this;
-      return map(function(it){
-        return it.write(JSON.stringify(_.extend({
-          host: this$.hostname
-        }, this$.settings.extendPacket || {}, {
-          data: logEvent.data,
-          tags: keys(logEvent.tags)
-        })) + "\n");
-      })(
-      values(
-      this.clients));
+      try {
+        return map(function(client){
+          return client.write(JSON.stringify(_.extend({
+            host: this$.hostname
+          }, this$.settings.extendPacket || {}, {
+            data: logEvent.data,
+            tags: keys(logEvent.tags)
+          })) + "\n");
+        })(
+        values(
+        this.clients));
+      } catch (e$) {}
     }
   });
   function compose$() {

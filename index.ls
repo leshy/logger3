@@ -28,9 +28,10 @@ parseTags = ->
   switch x = it?@@
     | undefined  => {}
     | String     => tmp = { }; tmp[it] = true; tmp
+    | Number     => tmp = { }; tmp[String(it)] = true; tmp
     | Object     => it.tags? or it
     | Array      => (flatten >> h.arrayToDict)(it)
-    | otherwise  => throw Error "tags type invalid"
+    | otherwise  => throw Error "tags type invalid, received: #{it}"
 
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
@@ -179,11 +180,13 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
       id = cnt++
       @clients[id] = socket
       socket.on 'close', ~> delete @clients[id]
+      socket.on 'error', ~> delete @clients[id]
     server.listen @settings.port, @settings.host
 
   log: (logEvent) ->
-    @clients
-      |> values
-      |> map ~> it.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
-
+    try
+      @clients
+        |> values
+        |> map (client) ~>
+          client.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
 )
