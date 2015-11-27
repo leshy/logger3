@@ -77,7 +77,9 @@
       this.outputs = new Backbone.Collection();
       if (settings.outputs) {
         _.map(settings.outputs, function(settings, name){
-          return this$.outputs.push(new exports[name](settings));
+          if (settings) {
+            return this$.outputs.push(new exports[name](settings));
+          }
         });
       } else if (this.depth === 0) {
         this.outputs.push(new Console());
@@ -196,9 +198,9 @@
       contexts));
     },
     log: function(){
-      var contexts, this$ = this;
+      var contexts, ref$, this$ = this;
       contexts = slice$.call(arguments);
-      if (first(contexts).constructor === String) {
+      if (((ref$ = first(contexts)) != null ? ref$.constructor : void 8) === String) {
         contexts = [contexts];
       }
       return function(context){

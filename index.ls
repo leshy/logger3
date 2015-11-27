@@ -45,7 +45,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
     if settings.outputs
       _.map settings.outputs, (settings,name) ~>
-        @outputs.push new exports[name](settings)
+        if settings then @outputs.push new exports[name](settings)
     else if @depth is 0 then @outputs.push new Console()
 
     @subscribe true, (event) ~>
@@ -123,7 +123,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     |> fold1 h.extend
 
   log: (...contexts) ->
-    if first(contexts)@@ is String then contexts = [ contexts ]
+    if first(contexts)?@@ is String then contexts = [ contexts ]
 
     contexts
     |> ~> if @context then h.unshift it, @context else it

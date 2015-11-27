@@ -1,28 +1,73 @@
 {
-  "name": "logger3",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "_args": [
+    [
+      "logger3@git://github.com/leshy/logger3.git",
+      "/home/lesh/coding/bitcoin/bomber"
+    ]
+  ],
+  "_from": "git://github.com/leshy/logger3.git",
+  "_id": "logger3@1.0.0",
+  "_inCache": true,
+  "_location": "/logger3",
+  "_phantomChildren": {},
+  "_requested": {
+    "hosted": {
+      "directUrl": "https://raw.githubusercontent.com/leshy/logger3/master/package.json",
+      "gitUrl": "git://github.com/leshy/logger3.git",
+      "httpsUrl": "git+https://github.com/leshy/logger3.git",
+      "shortcut": "github:leshy/logger3",
+      "ssh": "git@github.com:leshy/logger3.git",
+      "sshUrl": "git+ssh://git@github.com/leshy/logger3.git",
+      "type": "github"
+    },
+    "name": "logger3",
+    "raw": "logger3@git://github.com/leshy/logger3.git",
+    "rawSpec": "git://github.com/leshy/logger3.git",
+    "scope": null,
+    "spec": "git://github.com/leshy/logger3.git",
+    "type": "hosted"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/leshy/logger3.git"
+  "_requiredBy": [
+    "/",
+    "/ribcage_logger"
+  ],
+  "_resolved": "git://github.com/leshy/logger3.git#84cd43fe56d26c80cedcadf14a3a2043de7dda48",
+  "_shasum": "5c4640adea44d187ac9b0ec4f3b64d01963e1644",
+  "_shrinkwrap": null,
+  "_spec": "logger3@git://github.com/leshy/logger3.git",
+  "_where": "/home/lesh/coding/bitcoin/bomber",
+  "author": {
+    "name": "lesh"
   },
-  "author": "lesh",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/leshy/logger3/issues"
   },
-  "homepage": "https://github.com/leshy/logger3",
   "dependencies": {
     "backbone4000": "git://github.com/leshy/backbone4000.git",
     "colors": "1.0.3",
     "helpers": "git://github.com/leshy/nodejs-helpers.git",
     "prelude-ls": "^1.1.2",
-    "subscriptionman2": "git://github.com/leshy/nodejs-subscriptionman2",
+    "subscriptionman2": "git://github.com/leshy/nodejs-subscriptionman2.git",
     "udp-client": "^0.1.0",
     "underscore": "^1.8.3"
-  }
+  },
+  "description": "",
+  "devDependencies": {},
+  "gitHead": "84cd43fe56d26c80cedcadf14a3a2043de7dda48",
+  "homepage": "https://github.com/leshy/logger3",
+  "installable": true,
+  "license": "ISC",
+  "main": "index.js",
+  "name": "logger3",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leshy/logger3.git"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "1.0.0"
 }
