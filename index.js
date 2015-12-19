@@ -311,13 +311,13 @@
       });
     },
     log: function(logEvent){
-      return this.connection.send(new Buffer(JSON.stringify(_.extend({
+      return this.connection.send(_.extend({
         type: 'nodelogger',
         host: this.hostname
       }, this.settings.extendPacket || {}, {
         data: logEvent.data,
         tags: keys(logEvent.tags)
-      }))));
+      }));
     }
   });
   tcpServer = exports.tcpServer = Backbone.Model.extend4000({

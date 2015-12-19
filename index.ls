@@ -185,7 +185,7 @@ Tcp = exports.Tcp = Backbone.Model.extend4000 do
           logger: @settings.logger
   
   log: (logEvent) ->
-    @connection.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+    @connection.send _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
     
 
 
