@@ -10,7 +10,6 @@ _ = require 'underscore'
 colors = require 'colors'
 
 # udp logger
-UdpGun = require 'udp-client'
 os = require 'os'
 util = require 'util'
 
@@ -35,7 +34,7 @@ parseTags = ->
 
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
-
+    
   initialize: (settings={}) ->
     @context = (@ensureContext >> ignoreError)(settings.context or {}) or { tags: {}, data: {} }
     @depth = settings.depth or 0
@@ -44,6 +43,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     @outputs = new Backbone.Collection()
 
     if settings.outputs
+      
       _.map settings.outputs, (settings,name) ~>
         if settings then @outputs.push new exports[name](settings)
     else if @depth is 0 then @outputs.push new Console()
@@ -154,20 +154,39 @@ Console = exports.Console = Backbone.Model.extend4000(
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
+    console.log colors.green("#{hrtime[0] - @startTime}.#{hrtime[1]}") + "\t{ " + tags.join(', ') + " }\t" + (logEvent.msg or "-")
 )
 
-
-Udp = exports.Udp = Backbone.Model.extend4000(
+Udp = exports.Udp = Backbone.Model.extend4000 do
   name: 'udp'
 
   initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
+    UdpGun = require 'udp-client'
+
     @gun = new UdpGun @settings.port, @settings.host
     @hostname = os.hostname()
 
   log: (logEvent) ->
     @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
-)
+
+
+Tcp = exports.Tcp = Backbone.Model.extend4000 do
+  name: 'tcp'
+  initialize: (@settings = { host: 'localhost', port: 6001 } ) ->
+    
+    reconnecto = require('lweb3/transports/reconnecto').reconnecto
+    nssocketClient = require('lweb3/transports/client/nssocket').nssocketClient
+
+    @connection = new reconnecto do
+      defaultChannelClass: nssocketClient.extend4000 do
+        defaults:
+          host: @settings.host
+          port: @settings.port
+          logger: @settings.logger
+  
+  log: (logEvent) ->
+    @connection.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+    
 
 
 tcpServer = exports.tcpServer = Backbone.Model.extend4000(
