@@ -185,10 +185,8 @@ Tcp = exports.Tcp = Backbone.Model.extend4000 do
           logger: @settings.logger
   
   log: (logEvent) ->
-    @connection.send _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+    @connection.send _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: logEvent.tags }
     
-
-
 tcpServer = exports.tcpServer = Backbone.Model.extend4000(
   name: 'tcpServer'
 
@@ -209,3 +207,13 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
         |> map (client) ~>
           client.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
 )
+
+
+Fluent = exports.Fluent = Backbone.Model.extend4000 do
+  name: 'fluent'
+  initialize: (@settings = { host: 'localhost', name: 'logger', port: 24224 } ) ->
+    @logger = require 'fluent-logger'
+    @logger.configure os.hostname() + '.n.' + (@settings.name or "unnamed"), { host: @settings.host, port: @settings.port }
+
+  log: (logEvent) ->
+    @logger.emit keys(logEvent.tags).join('.'), _.extend {}, (@settings.extendPacket or {}), logEvent.data
