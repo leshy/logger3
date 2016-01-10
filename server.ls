@@ -12,7 +12,7 @@ colors = require 'colors'
 UdpGun = require 'udp-client'
 os = require 'os'
 util = require 'util'
-
+_ = require 'underscore'
 index = require('./index')
 
 module.exports = exports = index.getExports()
