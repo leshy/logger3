@@ -36,9 +36,6 @@
       entry = h.extendm({
         time: new Date()
       }, logEvent);
-      if (empty(entry.data)) {
-        delete entry.data;
-      }
       return this.c.insert(entry);
     }
   });

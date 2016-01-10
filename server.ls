@@ -29,7 +29,7 @@ db = exports.db  = Backbone.Model.extend4000 do
     
   log: (logEvent) ->
     entry = h.extendm { time: new Date() }, logEvent
-    if empty entry.data then delete entry.data
+#    if empty entry.data then delete entry.data
     @c.insert entry
 
 console.log keys index.exports
