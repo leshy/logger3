@@ -137,83 +137,18 @@ parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
   | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
+  
 
-
-Console = exports.Console = Backbone.Model.extend4000(
+Console = exports.Console = Backbone.Model.extend4000 do
   name: 'console'
   initialize: -> @startTime = process.hrtime()[0]
-  parseTags: (tags) ->
-    tags
-    |> keys
-    |> map (tag) ->
-      if tag is 'fail' or tag is 'error' then return colors.red tag
-      if tag in [ 'pass', 'ok', 'success', 'completed' ] then return colors.green tag
-      if tag in [ 'GET','POST', 'login', 'in', 'out' ] then return colors.magenta tag
-      return colors.yellow tag
+  parseTags: (tags) -> tags |> keys
 
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
     console.log colors.green("#{hrtime[0] - @startTime}.#{hrtime[1]}") + "\t{ " + tags.join(', ') + " }\t" + (logEvent.msg or "-")
-)
-
-Udp = exports.Udp = Backbone.Model.extend4000 do
-  name: 'udp'
-
-  initialize: (@settings = { host: 'localhost', port: 6000 } ) ->
-    UdpGun = require 'udp-client'
-
-    @gun = new UdpGun @settings.port, @settings.host
-    @hostname = os.hostname()
-
-  log: (logEvent) ->
-    @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
 
 
-Tcp = exports.Tcp = Backbone.Model.extend4000 do
-  name: 'tcp'
-  initialize: (@settings = { host: 'localhost', port: 6001 } ) ->
-    
-    reconnecto = require('lweb3/transports/reconnecto').reconnecto
-    nssocketClient = require('lweb3/transports/client/nssocket').nssocketClient
 
-    @connection = new reconnecto do
-      defaultChannelClass: nssocketClient.extend4000 do
-        defaults:
-          host: @settings.host
-          port: @settings.port
-          logger: @settings.logger
-  
-  log: (logEvent) ->
-    @connection.send _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: logEvent.tags }
-    
-tcpServer = exports.tcpServer = Backbone.Model.extend4000(
-  name: 'tcpServer'
-
-  initialize: (@settings = { port: 7000, host: '0.0.0.0' } ) ->
-    cnt = 0
-    @clients = {}
-    server = net.createServer (socket) ~>
-      id = cnt++
-      @clients[id] = socket
-      socket.on 'close', ~> delete @clients[id]
-      socket.on 'error', ~> delete @clients[id]
-    server.listen @settings.port, @settings.host
-
-  log: (logEvent) ->
-    try
-      @clients
-        |> values
-        |> map (client) ~>
-          client.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
-)
-
-
-Fluent = exports.Fluent = Backbone.Model.extend4000 do
-  name: 'fluent'
-  initialize: (@settings = { host: 'localhost', name: 'logger', port: 24224 } ) ->
-    @logger = require 'fluent-logger'
-    @logger.configure os.hostname() + '.n.' + (@settings.name or "unnamed"), { host: @settings.host, port: @settings.port }
-
-  log: (logEvent) ->
-    @logger.emit keys(logEvent.tags).join('.'), _.extend {}, (@settings.extendPacket or {}), logEvent.data
+getExports = exports.getExports = ~> module.exports
