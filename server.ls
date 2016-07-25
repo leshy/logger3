@@ -1,3 +1,4 @@
+#autocompile
 { empty, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 h = require 'helpers'
 net = require 'net'
@@ -13,16 +14,14 @@ UdpGun = require 'udp-client'
 os = require 'os'
 util = require 'util'
 _ = require 'underscore'
-index = require('./index')
 
-module.exports = exports = index.getExports()
+module.exports = require('./index')
 
 db = exports.db  = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
     @settings =  h.extendm { name: 'log', collection: 'log', host: 'localhost', port: 27017 }, settings
     mongodb = require 'mongodb'
-    console.log "DB START!", settings
     @db = new mongodb.Db @settings.name, new mongodb.Server(@settings.host or 'localhost', @settings.port or 27017), safe: true
     @db.open()
     @c = @db.collection @settings.collection
@@ -32,25 +31,6 @@ db = exports.db  = Backbone.Model.extend4000 do
 #    if empty entry.data then delete entry.data
     @c.insert entry
 
-console.log keys index.exports
-
-Console = exports.Console = Backbone.Model.extend4000(
-  name: 'console'
-  initialize: -> @startTime = process.hrtime()[0]
-  parseTags: (tags) ->
-    tags
-    |> keys
-    |> map (tag) ->
-      if tag is 'fail' or tag is 'error' then return colors.red tag
-      if tag in [ 'pass', 'ok', 'success', 'completed' ] then return colors.green tag
-      if tag in [ 'GET','POST', 'login', 'in', 'out' ] then return colors.magenta tag
-      return colors.yellow tag
-
-  log: (logEvent) ->
-    hrtime = process.hrtime()
-    tags = @parseTags logEvent.tags
-    console.log colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
-)
 
 
 Fluent = exports.Fluent = Backbone.Model.extend4000 do

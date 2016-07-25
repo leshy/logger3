@@ -1,3 +1,4 @@
+#autocompile
 { map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 h = require 'helpers'
 net = require 'net'
@@ -139,16 +140,20 @@ parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   | Object  => { data: msg, tags: data }
   
 
-Console = exports.Console = Backbone.Model.extend4000 do
+Console = exports.Console = Backbone.Model.extend4000(
   name: 'console'
   initialize: -> @startTime = process.hrtime()[0]
-  parseTags: (tags) -> tags |> keys
+  parseTags: (tags) ->
+    tags
+    |> keys
+    |> map (tag) ->
+      if tag is 'fail' or tag is 'error' then return colors.red tag
+      if tag in [ 'pass', 'ok', 'success', 'completed' ] then return colors.green tag
+      if tag in [ 'GET','POST', 'login', 'in', 'out' ] then return colors.magenta tag
+      return colors.yellow tag
 
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.green("#{hrtime[0] - @startTime}.#{hrtime[1]}") + "\t{ " + tags.join(', ') + " }\t" + (logEvent.msg or "-")
-
-
-
-getExports = exports.getExports = ~> module.exports
+    console.log colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
+)
