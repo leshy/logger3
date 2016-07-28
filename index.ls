@@ -1,5 +1,7 @@
 #autocompile
+
 { map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+
 h = require 'helpers'
 net = require 'net'
 
@@ -25,13 +27,17 @@ callable = (cls) ->
     obj
 
 parseTags = ->
-  switch x = it?@@
+  
+  ret = switch x = it?@@
     | undefined  => {}
-    | String     => tmp = { }; tmp[it] = true; tmp
-    | Number     => tmp = { }; tmp[String(it)] = true; tmp
+    | String     => { "#{it}": true }
+    | Number     => { "#{it}": true }
     | Object     => it.tags? or it
-    | Array      => (flatten >> h.arrayToDict)(it)
+    | Array     => _.reduce it, ((tags, entry) -> tags <<< parseTags entry), {}
     | otherwise  => throw Error "tags type invalid, received: #{it}"
+    
+  ret
+        
 
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args

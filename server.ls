@@ -1,5 +1,5 @@
 #autocompile
-{ empty, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+{ obj-to-pairs, empty, map, fold, keys, values, first, flatten } = require 'prelude-ls'
 h = require 'helpers'
 net = require 'net'
 
@@ -15,35 +15,49 @@ os = require 'os'
 util = require 'util'
 _ = require 'underscore'
 
-module.exports = require('./index')
+exports <<< require('./index')
 
 db = exports.db  = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
-    @settings =  h.extendm { name: 'log', collection: 'log', host: 'localhost', port: 27017 }, settings
-    mongodb = require 'mongodb'
-    @db = new mongodb.Db @settings.name, new mongodb.Server(@settings.host or 'localhost', @settings.port or 27017), safe: true
+    @settings =  { name: 'log', collection: 'log', host: 'localhost', port: 27017, tail: h.Day * 30 } <<< settings
+    @mongodb = require 'mongodb'
+    
+    @db = new @mongodb.Db @settings.name, new @mongodb.Server(@settings.host or 'localhost', @settings.port or 27017), safe: true
     @db.open()
     @c = @db.collection @settings.collection
-    
+
+    @removeTail()
+    setInterval (~> @removeTail()), h.Hour
+      
+  removeTail: (cb) ->
+    splitPoint = Math.round((new Date().getTime() - @settings.tail) / 1000).toString(16)
+    @c.remove { _id: { $lt: @mongodb.ObjectId(splitPoint + "0000000000000000") } }, cb
+            
   log: (logEvent) ->
     entry = h.extendm { time: new Date() }, logEvent
-#    if empty entry.data then delete entry.data
+    if empty entry.data then delete entry.data
     @c.insert entry
-
-
 
 Fluent = exports.Fluent = Backbone.Model.extend4000 do
   name: 'fluent'
   initialize: (@settings = { host: 'localhost', name: 'logger', port: 24224 } ) ->
     @logger = require 'fluent-logger'
     @logger.configure os.hostname() + '.n.' + @settings.name, { host: @settings.host, port: @settings.port }
-    console.log "FLUENT INIT"
   log: (logEvent) ->
     @logger.emit keys(logEvent.tags).join('.'), h.extend (@settings.extendPacket or {}), logEvent.data
 
 
-
+Sails = exports.Sails = Backbone.Model.extend4000 do
+  name: 'sails'
+  initialize: (@settings = { sails: false } ) ->
+    if not @settings.sails then throw "Sails instance missing"
+    @sails = @settings.sails
+    
+  log: (logEvent) ->
+    @sails.sockets.broadcast 'log', 'log', logEvent
+    @sails.emit 'log', logEvent
+    
 Udp = exports.Udp = Backbone.Model.extend4000 do
   name: 'udp'
 
@@ -55,7 +69,6 @@ Udp = exports.Udp = Backbone.Model.extend4000 do
 
   log: (logEvent) ->
     @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
-
 
 Tcp = exports.Tcp = Backbone.Model.extend4000 do
   name: 'tcp'
