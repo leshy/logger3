@@ -1,22 +1,59 @@
 #autocompile
-{ obj-to-pairs, empty, map, fold, keys, values, first, flatten } = require 'prelude-ls'
-h = require 'helpers'
-net = require 'net'
+#
+# this should use some plugin system. different outputs have very differnet and beefy dependencies
+# check lego but also https://github.com/c9/architect
 
-Backbone = require 'backbone4000'
-subscriptionMan = require('subscriptionman2')
+require! { 
+  lodash: { map, keys, values, isEmpty, defaultsDeep, pick }
+  
+  net
+  colors
+  os
+  util
 
-# console logger
-colors = require 'colors'
+  helpers: h
 
-# udp logger
-UdpGun = require 'udp-client'
-os = require 'os'
-util = require 'util'
-_ = require 'underscore'
+  backbone4000: Backbone  
+  subscriptionman2: subscriptionMan
+  underscore: '_'  
+}
 
-exports <<< require('./index')
+exports <<< require './index'
 
+influx = exports.influx = Backbone.Model.extend4000 do
+  name: 'influx'
+  initialize: (settings={}) ->
+    
+    @settings = do
+      client: 
+        series: 'log',
+        host: 'localhost',
+        port: 8086
+        protocol: 'http'
+        username: 'node',
+        database: 'logger'
+      tagFields: { +module, +app }
+
+    defaultsDeep @settings, settings
+
+
+    @series = @settings.client.series
+    @tagFields = keys @settings.tagFields
+
+            
+    influx = require 'influx'
+    @client = influx @settings.client
+    
+  log: (logEvent) ->
+    #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })    
+    @client.writePoint do
+      @series
+      logEvent.data <<< logEvent.tags
+      pick logEvent.tags, @tagFields
+      (err,res) ->
+        console.log err, res
+
+    
 db = exports.db  = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
@@ -36,7 +73,7 @@ db = exports.db  = Backbone.Model.extend4000 do
             
   log: (logEvent) ->
     entry = h.extendm { time: new Date() }, logEvent
-    if empty entry.data then delete entry.data
+    if isEmpty entry.data then delete entry.data
     @c.insert entry
 
 Fluent = exports.Fluent = Backbone.Model.extend4000 do
@@ -44,6 +81,7 @@ Fluent = exports.Fluent = Backbone.Model.extend4000 do
   initialize: (@settings = { host: 'localhost', name: 'logger', port: 24224 } ) ->
     @logger = require 'fluent-logger'
     @logger.configure os.hostname() + '.n.' + @settings.name, { host: @settings.host, port: @settings.port }
+    
   log: (logEvent) ->
     @logger.emit keys(logEvent.tags).join('.'), h.extend (@settings.extendPacket or {}), logEvent.data
 

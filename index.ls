@@ -1,14 +1,15 @@
 #autocompile
 
-{ map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+{ obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 
 h = require 'helpers'
 net = require 'net'
 
 Backbone = require 'backbone4000'
-subscriptionMan = require('subscriptionman2')
+subscriptionMan = require 'subscriptionman2'
 
 _ = require 'underscore'
+
 # console logger
 colors = require 'colors'
 
@@ -151,12 +152,19 @@ Console = exports.Console = Backbone.Model.extend4000(
   initialize: -> @startTime = process.hrtime()[0]
   parseTags: (tags) ->
     tags
-    |> keys
-    |> map (tag) ->
-      if tag is 'fail' or tag is 'error' then return colors.red tag
-      if tag in [ 'pass', 'ok', 'success', 'completed' ] then return colors.green tag
-      if tag in [ 'GET','POST', 'login', 'in', 'out' ] then return colors.magenta tag
-      return colors.yellow tag
+    |> obj-to-pairs
+    |> map ([tag, value]) ->
+
+      paintString = -> 
+        if it in <[ fail error err warning warn ]> then return colors.red it
+        if it in <[ done pass ok success completed ]> then return colors.green it
+        if it in <[ exec task ]> then return colors.magenta it
+        if it in <[ GET POST login in out skip]> then return colors.magenta it
+        return colors.yellow it
+
+      if value is true then paintString tag
+      else "#{colors.gray tag}:#{paintString value}"
+
 
   log: (logEvent) ->
     hrtime = process.hrtime()
