@@ -20,32 +20,34 @@ require! {
 
 exports <<< require './index'
 
-influx = exports.influx = Backbone.Model.extend4000 do
+Influx = exports.Influx = Backbone.Model.extend4000 do
   name: 'influx'
   initialize: (settings={}) ->
     
     @settings = do
-      client: 
-        series: 'log',
-        host: 'localhost',
+      connection: 
+        host: 'localhost'
         port: 8086
         protocol: 'http'
-        username: 'node',
+        username: 'node'
         database: 'logger'
+        
+      series: 'log'
       tagFields: { +module, +app }
 
-    defaultsDeep @settings, settings
+    @settings = defaultsDeep settings, @settings
 
-
-    @series = @settings.client.series
+    console.log @settings
+    @series = @settings.series
     @tagFields = keys @settings.tagFields
-
             
     influx = require 'influx'
-    @client = influx @settings.client
+    @client = influx @settings.connection
     
   log: (logEvent) ->
-    #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })    
+    console.log logEvent
+    #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })
+    
     @client.writePoint do
       @series
       logEvent.data <<< logEvent.tags

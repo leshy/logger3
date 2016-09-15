@@ -169,5 +169,5 @@ Console = exports.Console = Backbone.Model.extend4000(
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
+    console.log colors.green("#{process.pid} #{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
 )
