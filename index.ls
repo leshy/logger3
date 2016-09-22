@@ -1,6 +1,8 @@
 #autocompile
 
-{ obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+{obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+
+require! { leshdash: { find } }
 
 h = require 'helpers'
 net = require 'net'
@@ -47,14 +49,15 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     @context = (@ensureContext >> ignoreError)(settings.context or {}) or { tags: {}, data: {} }
     @depth = settings.depth or 0
     @parent = settings.parent
+    @ignore = settings.ignore
 
     @outputs = new Backbone.Collection()
 
     if settings.outputs
-      
       _.map settings.outputs, (settings,name) ~>
         if settings then @outputs.push new exports[name](settings)
     else if @depth is 0 then @outputs.push new Console()
+
 
     @subscribe true, (event) ~>
         @outputs.each (output) -> output.log event
@@ -73,7 +76,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     @context = h.extend @context, @parseContexts contexts
 
   child: (...contexts) ->
-    new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts
+    new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts, ignore: @ignore
 
   ensureContext: ->
     # does this object have a logContext function or value?
@@ -130,13 +133,17 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     |> map @ensureContext >> throwError
     |> fold1 h.extend
 
+  maybeEvent: (logEvent) ->
+    if @ignore and (find (keys logEvent.tags), ~> @ignore[ it ]) then return
+    @event logEvent
+  
   log: (...contexts) ->
     if first(contexts)?@@ is String then contexts = [ contexts ]
 
     contexts
     |> ~> if @context then h.unshift it, @context else it
     |> @parseContexts
-    |> @event
+    |> @maybeEvent
     |> (context) ~> ~> @child _.omit context, 'data', 'msg'
 )
 
@@ -165,9 +172,8 @@ Console = exports.Console = Backbone.Model.extend4000(
       if value is true then paintString tag
       else "#{colors.gray tag}:#{paintString value}"
 
-
   log: (logEvent) ->
     hrtime = process.hrtime()
     tags = @parseTags logEvent.tags
-    console.log colors.green("#{process.pid} #{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
+    console.log colors.magenta(process.pid), colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
 )

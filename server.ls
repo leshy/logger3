@@ -1,4 +1,4 @@
-#autocompile
+# autocompile
 #
 # this should use some plugin system. different outputs have very differnet and beefy dependencies
 # check lego but also https://github.com/c9/architect
@@ -18,7 +18,7 @@ require! {
   underscore: '_'  
 }
 
-exports <<< require './index'
+module.exports = require('./index') <<< require('./shared')
 
 Influx = exports.Influx = Backbone.Model.extend4000 do
   name: 'influx'
@@ -54,6 +54,36 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
       pick logEvent.tags, @tagFields
       (err,res) ->
         console.log err, res
+
+    
+
+redis = exports.redis = Backbone.Model.extend4000 do
+  name: 'redis'
+  initialize: (settings={}) ->
+    
+    @settings = do
+      connection: 
+        host: 'localhost'
+        port: 6379
+        
+      channel: 'log'
+      channelFields: { +pid, +module, +app }
+
+    @settings = defaultsDeep settings, @settings
+    @ <<< @settings{ channel, channelFields }
+    
+    redis = require 'redis'
+    @client = redis.createClient @settings.connection
+    
+  log: (logEvent) ->
+    channelName = @channel + "-" + (map do
+      pick logEvent.tags, @channelFields
+      (value, key) -> key + ":" + value
+      ).join "-"
+      
+    @client.publish do
+      channelName
+      JSON.stringify logEvent.data <<< logEvent.tags
 
     
 db = exports.db  = Backbone.Model.extend4000 do
@@ -109,6 +139,7 @@ Udp = exports.Udp = Backbone.Model.extend4000 do
 
   log: (logEvent) ->
     @gun.send new Buffer JSON.stringify _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }
+
 
 Tcp = exports.Tcp = Backbone.Model.extend4000 do
   name: 'tcp'

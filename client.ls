@@ -10,4 +10,4 @@ UdpGun = require 'udp-client'
 os = require 'os'
 util = require 'util'
 
-module.exports = require('./index')
+module.exports = require('./index') <<< require('./shared')
