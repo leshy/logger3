@@ -89,7 +89,6 @@
       this.outputs = new Backbone.Collection();
       if (settings.outputs) {
         _.map(settings.outputs, function(settings, name){
-          console.log(settings, name);
           if (settings) {
             return this$.outputs.push(new exports[name](settings));
           }
