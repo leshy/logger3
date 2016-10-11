@@ -4,7 +4,7 @@
 # check lego but also https://github.com/c9/architect
 
 require! { 
-  lodash: { map, keys, values, isEmpty, defaultsDeep, pick }
+  lodash: { map: lmap, keys, values, isEmpty, defaultsDeep, pick }
   
   net
   colors
@@ -15,10 +15,40 @@ require! {
 
   backbone4000: Backbone  
   subscriptionman2: subscriptionMan
-  underscore: '_'  
+  underscore: '_'
 }
 
-module.exports = require('./index') <<< require('./shared')
+{obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+
+
+
+hashColors = [ colors.green, colors.rainbow, colors.yellow, colors.red, colors.blue, colors.cyan, colors.magenta, colors.grey, colors.white ]
+
+exports.Console = Backbone.Model.extend4000 do
+    name: 'console'
+    initialize: -> @startTime = process.hrtime()[0]
+    parseTags: (tags) ->
+      tags
+      |> obj-to-pairs
+      |> map ([tag, value]) ->
+        
+        paintString = (value, name) ->
+          if value in <[ fail error err warning warn ]> then return colors.red value
+          if value in <[ done pass ok success completed ]> then return colors.green value
+          if value in <[ exec task ]> then return colors.magenta value
+          if value in <[ GET POST login in out skip]> then return colors.magenta value
+          if name is 'pid' then value = hashColors[ Number(value) % hashColors.length ] String value
+          return colors.yellow value
+
+        if value is true then paintString tag
+        else "#{colors.gray tag}:#{paintString value, tag}"
+
+    log: (logEvent) ->
+      hrtime = process.hrtime()
+      tags = @parseTags logEvent.tags
+      console.log colors.magenta(process.pid), colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
+
+
 
 Influx = exports.Influx = Backbone.Model.extend4000 do
   name: 'influx'
@@ -57,7 +87,7 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
 
     
 
-redis = exports.redis = Backbone.Model.extend4000 do
+redis = exports.Redis = Backbone.Model.extend4000 do
   name: 'redis'
   initialize: (settings={}) ->
     
@@ -76,14 +106,14 @@ redis = exports.redis = Backbone.Model.extend4000 do
     @client = redis.createClient @settings.connection
     
   log: (logEvent) ->
-    channelName = @channel + "-" + (map do
-      pick logEvent.tags, @channelFields
+    channelName = @channel + "/" + (lmap do
+      (pick logEvent.tags, keys @channelFields)
       (value, key) -> key + ":" + value
-      ).join "-"
+      ).join "/"
       
     @client.publish do
       channelName
-      JSON.stringify logEvent.data <<< logEvent.tags
+      JSON.stringify logEvent.data <<< logEvent.tags <<< msg: logEvent.msg
 
     
 db = exports.db  = Backbone.Model.extend4000 do
@@ -178,3 +208,5 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
         |> map (client) ~>
           client.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
 )
+
+module.exports = require('./index') <<< require('./shared') <<< module.exports

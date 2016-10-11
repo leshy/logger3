@@ -10,4 +10,8 @@ UdpGun = require 'udp-client'
 os = require 'os'
 util = require 'util'
 
-module.exports = require('./index') <<< require('./shared')
+Console = exports.Console = Backbone.Model.extend4000 do
+  name: 'console'
+  log: (logEvent) -> console.log logEvent
+
+module.exports = require('./index') <<< require('./shared') <<< module.exports

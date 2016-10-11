@@ -1,15 +1,16 @@
 (function(){
-  var ref$, objToPairs, map, fold1, keys, values, first, flatten, find, h, net, Backbone, subscriptionMan, _, colors, os, util, throwError, ignoreError, callable, parseTags, Logger, parseArray, Console, slice$ = [].slice;
+  var ref$, objToPairs, map, fold1, keys, values, first, flatten, util, os, process, find, defaultsDeep, h, net, Backbone, subscriptionMan, _, colors, throwError, ignoreError, callable, parseTags, Logger, parseArray, slice$ = [].slice;
   ref$ = require('prelude-ls'), objToPairs = ref$.objToPairs, map = ref$.map, fold1 = ref$.fold1, keys = ref$.keys, values = ref$.values, first = ref$.first, flatten = ref$.flatten;
-  find = require('leshdash').find;
+  util = require('util');
+  os = require('os');
+  process = require('process');
+  ref$ = require('leshdash'), find = ref$.find, defaultsDeep = ref$.defaultsDeep;
   h = require('helpers');
   net = require('net');
   Backbone = require('backbone4000');
   subscriptionMan = require('subscriptionman2');
   _ = require('underscore');
   colors = require('colors');
-  os = require('os');
-  util = require('util');
   throwError = function(it){
     if ((it != null ? it.constructor : void 8) === Error) {
       throw it;
@@ -66,25 +67,35 @@
       args = slice$.call(arguments);
       return this.log.apply(this, args);
     },
+    defaultContext: function(addContext){
+      addContext == null && (addContext = {});
+      return defaultsDeep({
+        tags: {
+          pid: process.pid,
+          box: os.hostname()
+        }
+      }, addContext);
+    },
     initialize: function(settings){
-      var this$ = this;
+      var initContext, this$ = this;
       settings == null && (settings = {});
-      this.context = compose$(this.ensureContext, ignoreError)(settings.context || {}) || {
-        tags: {},
-        data: {}
-      };
+      if (!(initContext = settings.context)) {
+        initContext = this.defaultContext(settings.addContext);
+      }
+      this.context = compose$(this.ensureContext, ignoreError)(initContext);
       this.depth = settings.depth || 0;
       this.parent = settings.parent;
       this.ignore = settings.ignore;
       this.outputs = new Backbone.Collection();
       if (settings.outputs) {
         _.map(settings.outputs, function(settings, name){
+          console.log(settings, name);
           if (settings) {
             return this$.outputs.push(new exports[name](settings));
           }
         });
       } else if (this.depth === 0) {
-        this.outputs.push(new Console());
+        this.outputs.push(new exports.Console());
       }
       return this.subscribe(true, function(event){
         this$.outputs.each(function(output){
@@ -250,46 +261,6 @@
       };
     }
   };
-  Console = exports.Console = Backbone.Model.extend4000({
-    name: 'console',
-    initialize: function(){
-      return this.startTime = process.hrtime()[0];
-    },
-    parseTags: function(tags){
-      return map(function(arg$){
-        var tag, value, paintString;
-        tag = arg$[0], value = arg$[1];
-        paintString = function(it){
-          if (it === 'fail' || it === 'error' || it === 'err' || it === 'warning' || it === 'warn') {
-            return colors.red(it);
-          }
-          if (it === 'done' || it === 'pass' || it === 'ok' || it === 'success' || it === 'completed') {
-            return colors.green(it);
-          }
-          if (it === 'exec' || it === 'task') {
-            return colors.magenta(it);
-          }
-          if (it === 'GET' || it === 'POST' || it === 'login' || it === 'in' || it === 'out' || it === 'skip') {
-            return colors.magenta(it);
-          }
-          return colors.yellow(it);
-        };
-        if (value === true) {
-          return paintString(tag);
-        } else {
-          return colors.gray(tag) + ":" + paintString(value);
-        }
-      })(
-      objToPairs(
-      tags));
-    },
-    log: function(logEvent){
-      var hrtime, tags;
-      hrtime = process.hrtime();
-      tags = this.parseTags(logEvent.tags);
-      return console.log(colors.magenta(process.pid), colors.green((hrtime[0] - this.startTime) + "." + hrtime[1]) + "\t " + tags.join(', ') + "\t" + (logEvent.msg || "-"));
-    }
-  });
   function import$(obj, src){
     var own = {}.hasOwnProperty;
     for (var key in src) if (own.call(src, key)) obj[key] = src[key];

@@ -1,6 +1,6 @@
 (function(){
-  var ref$, map, keys, values, isEmpty, defaultsDeep, pick, net, colors, os, util, h, Backbone, subscriptionMan, _, Influx, redis, db, Fluent, Sails, Udp, Tcp, tcpServer;
-  ref$ = require('lodash'), map = ref$.map, keys = ref$.keys, values = ref$.values, isEmpty = ref$.isEmpty, defaultsDeep = ref$.defaultsDeep, pick = ref$.pick;
+  var ref$, lmap, keys, values, isEmpty, defaultsDeep, pick, net, colors, os, util, h, Backbone, subscriptionMan, _, objToPairs, map, fold1, first, flatten, hashColors, Influx, redis, db, Fluent, Sails, Udp, Tcp, tcpServer;
+  ref$ = require('lodash'), lmap = ref$.map, keys = ref$.keys, values = ref$.values, isEmpty = ref$.isEmpty, defaultsDeep = ref$.defaultsDeep, pick = ref$.pick;
   net = require('net');
   colors = require('colors');
   os = require('os');
@@ -9,7 +9,51 @@
   Backbone = require('backbone4000');
   subscriptionMan = require('subscriptionman2');
   _ = require('underscore');
-  module.exports = import$(require('./index'), require('./shared'));
+  ref$ = require('prelude-ls'), objToPairs = ref$.objToPairs, map = ref$.map, fold1 = ref$.fold1, keys = ref$.keys, values = ref$.values, first = ref$.first, flatten = ref$.flatten;
+  hashColors = [colors.green, colors.rainbow, colors.yellow, colors.red, colors.blue, colors.cyan, colors.magenta, colors.grey, colors.white];
+  exports.Console = Backbone.Model.extend4000({
+    name: 'console',
+    initialize: function(){
+      return this.startTime = process.hrtime()[0];
+    },
+    parseTags: function(tags){
+      return map(function(arg$){
+        var tag, value, paintString;
+        tag = arg$[0], value = arg$[1];
+        paintString = function(value, name){
+          if (value === 'fail' || value === 'error' || value === 'err' || value === 'warning' || value === 'warn') {
+            return colors.red(value);
+          }
+          if (value === 'done' || value === 'pass' || value === 'ok' || value === 'success' || value === 'completed') {
+            return colors.green(value);
+          }
+          if (value === 'exec' || value === 'task') {
+            return colors.magenta(value);
+          }
+          if (value === 'GET' || value === 'POST' || value === 'login' || value === 'in' || value === 'out' || value === 'skip') {
+            return colors.magenta(value);
+          }
+          if (name === 'pid') {
+            value = hashColors[Number(value) % hashColors.length](String(value));
+          }
+          return colors.yellow(value);
+        };
+        if (value === true) {
+          return paintString(tag);
+        } else {
+          return colors.gray(tag) + ":" + paintString(value, tag);
+        }
+      })(
+      objToPairs(
+      tags));
+    },
+    log: function(logEvent){
+      var hrtime, tags;
+      hrtime = process.hrtime();
+      tags = this.parseTags(logEvent.tags);
+      return console.log(colors.magenta(process.pid), colors.green((hrtime[0] - this.startTime) + "." + hrtime[1]) + "\t " + tags.join(', ') + "\t" + (logEvent.msg || "-"));
+    }
+  });
   Influx = exports.Influx = Backbone.Model.extend4000({
     name: 'influx',
     initialize: function(settings){
@@ -43,7 +87,7 @@
       });
     }
   });
-  redis = exports.redis = Backbone.Model.extend4000({
+  redis = exports.Redis = Backbone.Model.extend4000({
     name: 'redis',
     initialize: function(settings){
       var ref$, redis;
@@ -67,11 +111,11 @@
       return this.client = redis.createClient(this.settings.connection);
     },
     log: function(logEvent){
-      var channelName;
-      channelName = this.channel + "-" + map(pick(logEvent.tags, this.channelFields), function(value, key){
+      var channelName, ref$;
+      channelName = this.channel + "/" + lmap(pick(logEvent.tags, keys(this.channelFields)), function(value, key){
         return key + ":" + value;
-      }).join("-");
-      return this.client.publish(channelName, JSON.stringify(import$(logEvent.data, logEvent.tags)));
+      }).join("/");
+      return this.client.publish(channelName, JSON.stringify((ref$ = import$(logEvent.data, logEvent.tags), ref$.msg = logEvent.msg, ref$)));
     }
   });
   db = exports.db = Backbone.Model.extend4000({
@@ -253,6 +297,7 @@
       } catch (e$) {}
     }
   });
+  module.exports = import$(import$(require('./index'), require('./shared')), module.exports);
   function import$(obj, src){
     var own = {}.hasOwnProperty;
     for (var key in src) if (own.call(src, key)) obj[key] = src[key];

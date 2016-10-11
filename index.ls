@@ -1,8 +1,8 @@
 #autocompile
 
-{obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
+{ obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 
-require! { leshdash: { find } }
+require! { util, os, process, leshdash: { find, defaultsDeep } }
 
 h = require 'helpers'
 net = require 'net'
@@ -14,10 +14,6 @@ _ = require 'underscore'
 
 # console logger
 colors = require 'colors'
-
-# udp logger
-os = require 'os'
-util = require 'util'
 
 throwError = -> if it?@@ is Error then throw it else it
 ignoreError = -> if it?@@ is Error then void else it
@@ -44,9 +40,15 @@ parseTags = ->
 
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
+  
+  defaultContext: (addContext={}) ->
+    defaultsDeep {tags: { pid: process.pid, box: os.hostname! }}, addContext
     
   initialize: (settings={}) ->
-    @context = (@ensureContext >> ignoreError)(settings.context or {}) or { tags: {}, data: {} }
+    
+    if not initContext = settings.context then initContext = @defaultContext(settings.addContext)
+      
+    @context = (@ensureContext >> ignoreError)(initContext)
     @depth = settings.depth or 0
     @parent = settings.parent
     @ignore = settings.ignore
@@ -55,8 +57,9 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
     if settings.outputs
       _.map settings.outputs, (settings,name) ~>
+        console.log settings,name
         if settings then @outputs.push new exports[name](settings)
-    else if @depth is 0 then @outputs.push new Console()
+    else if @depth is 0 then @outputs.push new exports.Console()
 
 
     @subscribe true, (event) ~>
@@ -79,6 +82,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts, ignore: @ignore
 
   ensureContext: ->
+    
     # does this object have a logContext function or value?
     checkContextFun = ->
       switch x = it.logContext?@@ # without equality here, this fails, wtf
@@ -139,7 +143,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
   
   log: (...contexts) ->
     if first(contexts)?@@ is String then contexts = [ contexts ]
-
+    
     contexts
     |> ~> if @context then h.unshift it, @context else it
     |> @parseContexts
@@ -153,27 +157,3 @@ parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   | String  => { msg: msg, data: data, tags: tags }
   | Object  => { data: msg, tags: data }
   
-
-Console = exports.Console = Backbone.Model.extend4000(
-  name: 'console'
-  initialize: -> @startTime = process.hrtime()[0]
-  parseTags: (tags) ->
-    tags
-    |> obj-to-pairs
-    |> map ([tag, value]) ->
-
-      paintString = -> 
-        if it in <[ fail error err warning warn ]> then return colors.red it
-        if it in <[ done pass ok success completed ]> then return colors.green it
-        if it in <[ exec task ]> then return colors.magenta it
-        if it in <[ GET POST login in out skip]> then return colors.magenta it
-        return colors.yellow it
-
-      if value is true then paintString tag
-      else "#{colors.gray tag}:#{paintString value}"
-
-  log: (logEvent) ->
-    hrtime = process.hrtime()
-    tags = @parseTags logEvent.tags
-    console.log colors.magenta(process.pid), colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
-)
