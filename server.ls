@@ -84,7 +84,6 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
       pick logEvent.tags, @tagFields
       (err,res) ->
         console.log err, res
-
     
 
 redis = exports.Redis = Backbone.Model.extend4000 do
@@ -100,6 +99,7 @@ redis = exports.Redis = Backbone.Model.extend4000 do
       channelFields: { +pid, +module, +app }
 
     @settings = defaultsDeep settings, @settings
+
     @ <<< @settings{ channel, channelFields }
     
     redis = require 'redis'
@@ -188,7 +188,7 @@ Tcp = exports.Tcp = Backbone.Model.extend4000 do
   log: (logEvent) ->
     @connection.send _.extend { type: 'nodelogger', host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: logEvent.tags }
     
-tcpServer = exports.tcpServer = Backbone.Model.extend4000(
+tcpServer = exports.tcpServer = Backbone.Model.extend4000 do
   name: 'tcpServer'
 
   initialize: (@settings = { port: 7000, host: '0.0.0.0' } ) ->
@@ -207,6 +207,5 @@ tcpServer = exports.tcpServer = Backbone.Model.extend4000(
         |> values
         |> map (client) ~>
           client.write JSON.stringify(_.extend { host: @hostname }, (@settings.extendPacket or {}), { data: logEvent.data, tags: keys logEvent.tags }) + "\n"
-)
 
 module.exports = require('./index') <<< require('./shared') <<< module.exports
