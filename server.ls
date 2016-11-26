@@ -73,9 +73,8 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
   log: (logEvent) ->
     #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })
     removeForbidden = -> 
-      forbiddenKeys = { +time }
-      mapKeys it, (val,key) ->
-        if forbiddenKeys[ key ] then "_" + key else key
+      forbiddenKeys = { +time, +measurement }
+      mapKeys it, (val,key) -> if forbiddenKeys[ key ] then "_" + key else key
 
     flattenVals = ->
       mapValues it, (val,key) ->
@@ -91,7 +90,7 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
       "log"
       data
       tags
-      (err,res) -> if err then console.error "influxdb logging error", err
+      (err) -> if err then console.error "influxdb logging error", err
     
 
 redis = exports.Redis = Backbone.Model.extend4000 do
