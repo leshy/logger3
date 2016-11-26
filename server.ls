@@ -61,13 +61,10 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
         username: 'node'
         database: 'logger'
         
-      series: 'log'
       tagFields: { +module, +app }
 
     @settings = defaultsDeep settings, @settings
 
-    console.log @settings
-    @series = @settings.series
     @tagFields = keys @settings.tagFields
             
     influx = require 'influx'
@@ -88,13 +85,13 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
     data = { time: new Date() } <<< (flattenVals removeForbidden omit (logEvent.data <<< logEvent.tags), @tagFields)
     tags = removeForbidden pick logEvent.tags, @tagFields
     
-#    console.log { data: data, tags: tags }
+#    console.log colors.green('log'), { data: data, tags: tags }
 
     @client.writePoint do
-      @series
+      "log"
       data
       tags
-      (err,res) -> if err then console.error "INFLUX LOG ERR",err
+      (err,res) -> if err then console.error "influxdb logging error", err
     
 
 redis = exports.Redis = Backbone.Model.extend4000 do
