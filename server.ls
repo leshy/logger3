@@ -4,7 +4,7 @@
 # check lego but also https://github.com/c9/architect
 
 require! { 
-  lodash: { map: lmap, keys, values, isEmpty, defaultsDeep, pick }
+  lodash: { map: lmap, keys, values, isEmpty, defaultsDeep, pick, omit, mapKeys, mapValues }
   
   net
   colors
@@ -49,11 +49,10 @@ exports.Console = Backbone.Model.extend4000 do
       console.log colors.magenta(process.pid), colors.green("#{hrtime[0]  - @startTime}.#{hrtime[1]}") + "\t " + tags.join(', ') + "\t" + (logEvent.msg or "-")
 
 
-
 Influx = exports.Influx = Backbone.Model.extend4000 do
   name: 'influx'
   initialize: (settings={}) ->
-    
+
     @settings = do
       connection: 
         host: 'localhost'
@@ -73,17 +72,29 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
             
     influx = require 'influx'
     @client = influx @settings.connection
-    
+
   log: (logEvent) ->
-    console.log logEvent
     #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })
+    removeForbidden = -> 
+      forbiddenKeys = { +time }
+      mapKeys it, (val,key) ->
+        if forbiddenKeys[ key ] then "_" + key else key
+
+    flattenVals = ->
+      mapValues it, (val,key) ->
+        if val?@@ in [ Object, Array ] then JSON.stringify val
+        else val
+      
+    data = { time: new Date() } <<< (flattenVals removeForbidden omit (logEvent.data <<< logEvent.tags), @tagFields)
+    tags = removeForbidden pick logEvent.tags, @tagFields
     
+#    console.log { data: data, tags: tags }
+
     @client.writePoint do
       @series
-      logEvent.data <<< logEvent.tags
-      pick logEvent.tags, @tagFields
-      (err,res) ->
-        console.log err, res
+      data
+      tags
+      (err,res) -> if err then console.error "INFLUX LOG ERR",err
     
 
 redis = exports.Redis = Backbone.Model.extend4000 do
@@ -116,7 +127,7 @@ redis = exports.Redis = Backbone.Model.extend4000 do
       JSON.stringify logEvent.data <<< logEvent.tags <<< msg: logEvent.msg
 
     
-db = exports.db  = Backbone.Model.extend4000 do
+db = exports.db = exports.Mongo = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
     @settings =  { name: 'log', collection: 'log', host: 'localhost', port: 27017, tail: h.Day * 30 } <<< settings

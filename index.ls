@@ -2,7 +2,12 @@
 
 { obj-to-pairs, map, fold1, keys, values, first, flatten } = require 'prelude-ls'
 
-require! { util, os, process, leshdash: { find, defaultsDeep } }
+require! {
+  util
+  os
+  process
+  leshdash: { find, defaultsDeep, reduce }: _
+}
 
 h = require 'helpers'
 net = require 'net'
@@ -10,7 +15,6 @@ net = require 'net'
 Backbone = require 'backbone4000'
 subscriptionMan = require 'subscriptionman2'
 
-_ = require 'underscore'
 
 # console logger
 colors = require 'colors'
@@ -26,18 +30,16 @@ callable = (cls) ->
     obj
 
 parseTags = ->
-  
   ret = switch x = it?@@
     | undefined  => {}
     | String     => { "#{it}": true }
     | Number     => { "#{it}": true }
     | Object     => it.tags? or it
-    | Array     => _.reduce it, ((tags, entry) -> tags <<< parseTags entry), {}
+    | Array     => reduce it, ((tags, entry) -> tags <<< parseTags entry), {}
     | otherwise  => throw Error "tags type invalid, received: #{it}"
     
   ret
         
-
 Logger = exports.Logger = subscriptionMan.basic.extend4000(
   call: (...args) -> @log.apply @, args
   
@@ -67,7 +69,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
     
   addTags: (tags) ->
     tags = parseTags tags
-    @context.tags = h.extend (@context.tags or {}), tags
+    @context.tags = (@context.tags or {}) <<< tags
 
   delTags: (tags) ->
     tags = parseTags tags
@@ -75,13 +77,12 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
       if tags[name] then undefined else true
 
   extendContext: (...contexts) ->
-    @context = h.extend @context, @parseContexts contexts
+    @context <<< @parseContexts contexts
 
   child: (...contexts) ->
     new Logger depth: @depth + 1, parent: @, context: @parseContexts contexts, ignore: @ignore
 
   ensureContext: ->
-    
     # does this object have a logContext function or value?
     checkContextFun = ->
       switch x = it.logContext?@@ # without equality here, this fails, wtf
@@ -92,6 +93,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
     passErr = (input, f) ->
       if input?@@ is Error then Error else f(input)
+
 
     # did I get an array? if so, build context object
     checkContextArray = ->
@@ -142,14 +144,12 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
   
   log: (...contexts) ->
     if first(contexts)?@@ is String then contexts = [ contexts ]
-    
     contexts
     |> ~> if @context then h.unshift it, @context else it
     |> @parseContexts
     |> @maybeEvent
     |> (context) ~> ~> @child _.omit context, 'data', 'msg'
 )
-
 
 parseArray = exports.parseArray = ([msg, data, ...tags]) ->
   switch x = msg@@
