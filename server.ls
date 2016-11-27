@@ -67,8 +67,8 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
 
     @tagFields = keys @settings.tagFields
             
-    influx = require 'influx'
-    @client = influx @settings.connection
+    require! { influx: { InfluxDB: influx } }
+    @client = new influx @settings.connection
 
   log: (logEvent) ->
     #@client.writePoint(seriesName, values, tags, [options], function(err, response) { })
@@ -79,19 +79,16 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
     flattenVals = ->
       mapValues it, (val,key) ->
         if not val? then return ""
-        if val?@@ in [ Object, Array ] then JSON.stringify val
+        if val?@@ in [ Boolean, Object, Array ] then JSON.stringify val
         else val
       
-    data = { time: new Date() } <<< (flattenVals removeForbidden omit (logEvent.data <<< logEvent.tags), @tagFields)
+    data = {} <<< (flattenVals removeForbidden omit (logEvent.data <<< logEvent.tags), @tagFields)
     tags = removeForbidden pick logEvent.tags, @tagFields
     
 #    console.log colors.green('log'), { data: data, tags: tags }
 
-    @client.writePoint do
-      "log"
-      data
-      tags
-      (err) -> if err then console.error "influxdb logging error", err
+    @client.writePoints [ { measurement: "log", fields: data, tags: tags, time: new Date() } ]
+    .catch -> console.error colors.red("error"), it.message
     
 
 redis = exports.Redis = Backbone.Model.extend4000 do
