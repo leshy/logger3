@@ -79,7 +79,7 @@ Influx = exports.Influx = Backbone.Model.extend4000 do
     flattenVals = ->
       mapValues it, (val,key) ->
         if not val? then return ""
-        if val?@@ in [ Boolean, Object, Array ] then JSON.stringify val
+        if val?@@ in [ Object, Array ] then JSON.stringify val
         else val
       
     data = {} <<< (flattenVals removeForbidden omit (logEvent.data <<< logEvent.tags), @tagFields)

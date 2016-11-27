@@ -99,7 +99,7 @@
           if (val == null) {
             return "";
           }
-          if ((ref$ = val != null ? val.constructor : void 8) === Boolean || ref$ === Object || ref$ === Array) {
+          if ((ref$ = val != null ? val.constructor : void 8) === Object || ref$ === Array) {
             return JSON.stringify(val);
           } else {
             return val;
