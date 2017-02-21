@@ -33,10 +33,10 @@ exports.Console = Backbone.Model.extend4000 do
       |> map ([tag, value]) ->
         
         paintString = (value, name) ->
-          if value in <[ fail error err warning warn ]> then return colors.red value
-          if value in <[ done pass ok success completed ]> then return colors.green value
+          if value in <[ fail error err warning warn 403 ]> then return colors.red value
+          if value in <[ done pass ok success completed 200 ]> then return colors.green value
           if value in <[ exec task ]> then return colors.magenta value
-          if value in <[ GET POST login in out skip]> then return colors.magenta value
+          if value in <[ GET POST login in out skip 404 ]> then return colors.magenta value
           if name is 'pid' then value = hashColors[ Number(value) % hashColors.length ] String value
           return colors.yellow value
 
@@ -118,13 +118,13 @@ redis = exports.Redis = Backbone.Model.extend4000 do
       
     @client.publish do
       channelName
-      JSON.stringify logEvent.data <<< logEvent.tags <<< msg: logEvent.msg
+      JSON.stringify logEvent
 
     
 db = exports.db = exports.Mongo = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
-    @settings =  { name: 'log', collection: 'log', host: 'localhost', port: 27017, tail: h.Day * 30 } <<< settings
+    @settings =  { name: 'log', collection: 'log', host: 'localhost', port: 27017, tail: h.Day * 30 * 6 } <<< settings
     @mongodb = require 'mongodb'
     
     @db = new @mongodb.Db @settings.name, new @mongodb.Server(@settings.host or 'localhost', @settings.port or 27017), safe: true

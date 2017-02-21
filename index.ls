@@ -140,6 +140,7 @@ Logger = exports.Logger = subscriptionMan.basic.extend4000(
 
   maybeEvent: (logEvent) ->
     if @ignore and (find (keys logEvent.tags), ~> @ignore[ it ]) then return
+    logEvent.time = new Date!getTime!
     @event logEvent
   
   log: (...contexts) ->
