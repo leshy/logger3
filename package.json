@@ -46,7 +46,6 @@
     "backbone4000": "git://github.com/leshy/backbone4000.git",
     "colors": "1.0.3",
     "fluent-logger": "^0.5.0",
-    "helpers": "git://github.com/leshy/leshdash.git",
     "influx": "^5.0.1",
     "leshdash": "git://github.com/leshy/leshdash.git",
     "lodash": "^4.17.2",
