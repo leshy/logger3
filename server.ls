@@ -125,6 +125,7 @@ db = exports.db = exports.Mongo = Backbone.Model.extend4000 do
   name: 'db'
   initialize: (settings) ->
     @settings =  { name: 'log', collection: 'log', host: 'localhost', port: 27017, tail: h.Day * 30 * 6 } <<< settings
+    
     @mongodb = require 'mongodb'
     
     @db = new @mongodb.Db @settings.name, new @mongodb.Server(@settings.host or 'localhost', @settings.port or 27017), safe: true
@@ -139,7 +140,7 @@ db = exports.db = exports.Mongo = Backbone.Model.extend4000 do
     @c.remove { _id: { $lt: @mongodb.ObjectId(splitPoint + "0000000000000000") } }, cb
             
   log: (logEvent) ->
-    entry = h.extendm { time: new Date() }, logEvent
+    entry = h.extendm { time: new Date(logEvent.time) }, logEvent
     if isEmpty entry.data then delete entry.data
     @c.insert entry
 
